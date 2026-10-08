@@ -16,6 +16,7 @@ export interface EnvironmentalObservation {
 }
 
 export interface FireObservation {
+  id: string;
   fireDetectionId: string;
   latitude: number;
   longitude: number;
@@ -26,6 +27,7 @@ export interface FireObservation {
 }
 
 export interface WeatherObservation {
+  id: string;
   observedAt: string;
   windSpeed: number; // km/h
   windDirection: number; // degrees
@@ -33,14 +35,17 @@ export interface WeatherObservation {
   humidity?: number; // percentage
   source: string;
   freshnessMinutes: number;
+  status: ObservationStatus;
 }
 
 export interface AirQualityObservation {
+  id: string;
   observedAt: string;
   pm25?: number; // µg/m³
   aqi?: number;
   source: string;
   freshnessMinutes: number;
+  status: ObservationStatus;
 }
 
 export interface School {
