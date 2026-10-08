@@ -10,7 +10,7 @@ export interface ReplayResult {
   engineResult: ReturnType<typeof evaluateRisk>;
 }
 
-export function runReplay(scenario: ReplayScenario): ReplayResult {
+export function runReplay(scenario: ReplayScenario, referenceTime: string): ReplayResult {
   validateReplayScenario(scenario);
   
   const result = evaluateRisk(
@@ -19,7 +19,8 @@ export function runReplay(scenario: ReplayScenario): ReplayResult {
     scenario.observations.aqi,
     scenario.school,
     scenario.operationalPlan,
-    scenario.isSimulation
+    scenario.isSimulation,
+    referenceTime
   );
 
   return {

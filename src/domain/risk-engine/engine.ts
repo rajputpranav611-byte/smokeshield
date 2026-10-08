@@ -28,9 +28,10 @@ export function evaluateRisk(
   aqi: AirQualityObservation | null,
   school: School,
   plan: OperationalPlan,
-  isSimulation: boolean
+  isSimulation: boolean,
+  referenceTime: string
 ): EngineResult {
-  const generatedAt = new Date().toISOString();
+  const generatedAt = referenceTime;
   let baseConfidence = 1.0;
   const evidenceIds: string[] = [];
   const factors: ContributingFactor[] = [];
@@ -171,7 +172,7 @@ export function evaluateRisk(
   const confidenceScore = Math.max(0, Math.min(1, baseConfidence));
 
   const assessment: RiskAssessment = {
-    assessmentId: `ra-${Date.now()}`,
+    assessmentId: `ra-${new Date(referenceTime).getTime()}`,
     schoolId: school.id,
     generatedAt,
     riskWindow: {
@@ -205,7 +206,7 @@ export function evaluateRisk(
   }
 
   const recommendation: Recommendation = {
-    recommendationId: `rec-${Date.now()}`,
+    recommendationId: `rec-${new Date(referenceTime).getTime()}`,
     action,
     rationale,
     confidenceScore,
