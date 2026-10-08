@@ -99,4 +99,76 @@ describe("Risk Engine Math & Logic", () => {
     expect(res1.assessment.overlapMinutes).toBe(res2.assessment.overlapMinutes);
     expect(res1.assessment.confidenceScore).toBe(res2.assessment.confidenceScore);
   });
+
+  it("S. missing wind + nearby fire", () => {
+    const fire = createFire(0.1, 0);
+    const { recommendation, factors } = evaluateRisk([fire], null, null, baseSchool, basePlan, false);
+    expect(factors.some(f => f.type === "PROXIMITY_WITHOUT_DIRECTION")).toBe(true);
+    expect(factors.some(f => f.type === "DIRECTIONAL_ALIGNMENT")).toBe(false);
+    expect(recommendation.confidenceScore).toBeLessThan(0.6); // penalized by -0.5
+    expect(recommendation.action).toBe("MONITOR");
+  });
+
+  it("T. stale wind + nearby fire", () => {
+    const fire = createFire(0.1, 0);
+    const weather = createWeather(0, 10, "STALE");
+    const { recommendation, factors } = evaluateRisk([fire], weather, null, baseSchool, basePlan, false);
+    expect(factors.some(f => f.type === "STALE_WEATHER")).toBe(true);
+    expect(recommendation.confidenceScore).toBeLessThan(0.8);
+  });
+
+  it("U. indoor-only schedule", () => {
+    const fire = createFire(0.1, 0);
+    const weather = createWeather(0);
+    const plan: OperationalPlan = {
+      ...basePlan,
+      activities: [{
+        id: "a1", name: "Assembly", 
+        startTime: new Date(now.getTime() + 60*60*1000).toISOString(),
+        endTime: new Date(now.getTime() + 120*60*1000).toISOString(),
+        locationType: "INDOOR"
+      }]
+    };
+    const { recommendation, factors } = evaluateRisk([fire], weather, null, baseSchool, plan, false);
+    expect(recommendation.action).toBe("MONITOR"); // Because indoor is skipped
+    expect(factors.some(f => f.type === "INDOOR_ACTIVITY")).toBe(true);
+  });
+
+  it("V. mixed indoor/outdoor schedule", () => {
+    const fire = createFire(0.1, 0);
+    const weather = createWeather(0);
+    const plan: OperationalPlan = {
+      ...basePlan,
+      activities: [{
+        id: "a1", name: "Indoor Assembly", 
+        startTime: new Date(now.getTime() + 60*60*1000).toISOString(),
+        endTime: new Date(now.getTime() + 120*60*1000).toISOString(),
+        locationType: "INDOOR"
+      }, {
+        id: "a2", name: "Outdoor PE", 
+        startTime: new Date(now.getTime() + 60*60*1000).toISOString(),
+        endTime: new Date(now.getTime() + 120*60*1000).toISOString(),
+        locationType: "OUTDOOR"
+      }]
+    };
+    const { assessment, recommendation } = evaluateRisk([fire], weather, null, baseSchool, plan, false);
+    expect(recommendation.action).toBe("REVIEW_PLAN"); // Outdoor triggers review
+    expect(assessment.overlapMinutes).toBeGreaterThan(0);
+  });
+
+  it("W. confidence lower bound", () => {
+    // Missing wind, error AQI, stale fire
+    const fire = createFire(0.1, 0, "STALE");
+    const aqi = { id: "a", observedAt: now.toISOString(), aqi: 200, source: "X", freshnessMinutes: 10, status: "STALE" as const };
+    const { assessment } = evaluateRisk([fire], null, aqi, baseSchool, basePlan, false);
+    expect(assessment.confidenceScore).toBeGreaterThanOrEqual(0.0);
+  });
+
+  it("X. confidence upper bound", () => {
+    const fire = createFire(0.1, 0);
+    const weather = createWeather(0);
+    const { assessment } = evaluateRisk([fire], weather, null, baseSchool, basePlan, false);
+    expect(assessment.confidenceScore).toBeLessThanOrEqual(1.0);
+    expect(assessment.confidenceScore).toBe(1.0);
+  });
 });
