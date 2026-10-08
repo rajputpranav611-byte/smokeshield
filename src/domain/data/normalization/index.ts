@@ -9,10 +9,15 @@ export interface RawFirmsData {
   instrument: string;
 }
 
-export function normalizeFirmsData(raw: RawFirmsData, receivedAt: string): FireObservation {
+export interface NormalizationOptions {
+  receivedAt: string;
+  now: string;
+}
+
+export function normalizeFirmsData(raw: RawFirmsData, options: NormalizationOptions): FireObservation {
   const observedAt = new Date(`${raw.acq_date}T${raw.acq_time.substring(0,2)}:${raw.acq_time.substring(2,4)}:00Z`).toISOString();
   
-  const ageMs = new Date(receivedAt).getTime() - new Date(observedAt).getTime();
+  const ageMs = new Date(options.now).getTime() - new Date(observedAt).getTime();
   let status: ObservationStatus = "ACTIVE";
   if (ageMs > 24 * 3600 * 1000) status = "STALE";
 
@@ -34,9 +39,9 @@ export interface RawWeatherData {
   main: { temp: number; humidity: number };
 }
 
-export function normalizeWeatherData(raw: RawWeatherData, receivedAt: string): WeatherObservation {
+export function normalizeWeatherData(raw: RawWeatherData, options: NormalizationOptions): WeatherObservation {
   const observedAt = new Date(raw.dt * 1000).toISOString();
-  const freshnessMinutes = Math.max(0, Math.floor((new Date(receivedAt).getTime() - new Date(observedAt).getTime()) / 60000));
+  const freshnessMinutes = Math.max(0, Math.floor((new Date(options.now).getTime() - new Date(observedAt).getTime()) / 60000));
   
   let status: ObservationStatus = "ACTIVE";
   if (freshnessMinutes > 60) status = "STALE";
@@ -60,9 +65,9 @@ export interface RawAQIData {
   aqi: number;
 }
 
-export function normalizeAQIData(raw: RawAQIData, receivedAt: string): AirQualityObservation {
+export function normalizeAQIData(raw: RawAQIData, options: NormalizationOptions): AirQualityObservation {
   const observedAt = new Date(raw.timestamp * 1000).toISOString();
-  const freshnessMinutes = Math.max(0, Math.floor((new Date(receivedAt).getTime() - new Date(observedAt).getTime()) / 60000));
+  const freshnessMinutes = Math.max(0, Math.floor((new Date(options.now).getTime() - new Date(observedAt).getTime()) / 60000));
   
   let status: ObservationStatus = "ACTIVE";
   if (freshnessMinutes > 120) status = "STALE";
