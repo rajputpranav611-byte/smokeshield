@@ -34,26 +34,29 @@ export function normalizeFirmsData(raw: RawFirmsData, options: NormalizationOpti
 }
 
 export interface RawWeatherData {
-  dt: number;
-  wind: { speed: number; deg: number };
-  main: { temp: number; humidity: number };
+  time: string;
+  wind_speed_10m: number;
+  wind_direction_10m: number;
+  temperature_2m?: number;
+  relative_humidity_2m?: number;
 }
 
 export function normalizeWeatherData(raw: RawWeatherData, options: NormalizationOptions): WeatherObservation {
-  const observedAt = new Date(raw.dt * 1000).toISOString();
+  const timeStr = raw.time.endsWith("Z") ? raw.time : raw.time + "Z";
+  const observedAt = new Date(timeStr).toISOString();
   const freshnessMinutes = Math.max(0, Math.floor((new Date(options.now).getTime() - new Date(observedAt).getTime()) / 60000));
   
   let status: ObservationStatus = "ACTIVE";
   if (freshnessMinutes > 60) status = "STALE";
 
   return {
-    id: `weather-${raw.dt}`,
+    id: `weather-${raw.time}`,
     observedAt,
-    windSpeed: raw.wind.speed * 3.6, // m/s to km/h
-    windDirection: raw.wind.deg,
-    temperature: raw.main.temp,
-    humidity: raw.main.humidity,
-    source: "OPENWEATHER",
+    windSpeed: raw.wind_speed_10m, // Open-Meteo provides km/h by default, which aligns with domain
+    windDirection: raw.wind_direction_10m,
+    temperature: raw.temperature_2m ?? 0,
+    humidity: raw.relative_humidity_2m,
+    source: "OPEN_METEO",
     freshnessMinutes,
     status
   };

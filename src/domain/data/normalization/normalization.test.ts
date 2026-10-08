@@ -35,14 +35,15 @@ describe("Data Normalization", () => {
   });
 
   it("normalizes Weather data correctly", () => {
-    const ts = new Date("2026-10-08T11:50:00Z").getTime() / 1000;
     const raw = {
-      dt: ts,
-      wind: { speed: 5, deg: 180 },
-      main: { temp: 22, humidity: 40 }
+      time: "2026-10-08T11:50:00",
+      wind_speed_10m: 18,
+      wind_direction_10m: 180,
+      temperature_2m: 22,
+      relative_humidity_2m: 40
     };
     const obs = normalizeWeatherData(raw, baseOptions);
-    expect(obs.windSpeed).toBe(18); // 5 m/s * 3.6
+    expect(obs.windSpeed).toBe(18); // km/h
     expect(obs.status).toBe("ACTIVE");
     expect(obs.freshnessMinutes).toBe(10);
   });
