@@ -1,0 +1,103 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
+
+  /* Semantic UI Colors */
+  --color-canvas: var(--canvas);
+  --color-panel: var(--panel);
+  --color-panel-elevated: var(--panel-elevated);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  
+  --color-info: var(--info);
+  --color-verified: var(--verified);
+  --color-watch: var(--watch);
+  --color-escalated: var(--escalated);
+  --color-danger: var(--danger);
+  --color-data-gap: var(--data-gap);
+
+  --color-map-fire: var(--map-fire);
+  --color-map-corridor: var(--map-corridor);
+  --color-map-school: var(--map-school);
+
+  /* Shadcn Map */
+  --color-card: var(--panel);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--panel-elevated);
+  --color-popover-foreground: var(--text-primary);
+  --color-primary-foreground: var(--canvas);
+  --color-secondary: var(--panel-elevated);
+  --color-secondary-foreground: var(--text-primary);
+  --color-muted: var(--border-subtle);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--border-subtle);
+  --color-accent-foreground: var(--text-primary);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--text-primary);
+  --color-border: var(--border-subtle);
+  --color-input: var(--border-strong);
+  --color-ring: var(--primary);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+}
+
+:root {
+  /* Enforce Dark Theme from DESIGN.md */
+  --background: #0B0F12;
+  --foreground: #F3F6F8;
+
+  --canvas: #0B0F12;
+  --panel: #11171C;
+  --panel-elevated: #172027;
+  --border-subtle: #28323A;
+  --border-strong: #3A4751;
+
+  --text-primary: #F3F6F8;
+  --text-secondary: #AAB5BE;
+  --text-muted: #73808A;
+
+  --primary: #A6E3B5;
+  --primary-strong: #7FD19A;
+
+  --info: #88BFFF;
+  --verified: #76D39A;
+  --watch: #F4C96B;
+  --escalated: #FF8A65;
+  --danger: #FF6B6B;
+  --data-gap: #7D8892;
+
+  --map-fire: #FF6B4A;
+  --map-corridor: #A6E3B5;
+  --map-school: #F3F6F8;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  html {
+    @apply font-sans;
+  }
+}
