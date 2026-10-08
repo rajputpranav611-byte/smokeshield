@@ -2,13 +2,14 @@
 
 ## Data Flow
 
-Providers
-→ Normalization
-→ Orchestrator
+Frontend
+→ Assessment API
 → Assessment Service
+→ Orchestrator
 → Risk Engine
 → Recommendation
 
+- **Assessment API**: Exposes the assessment service via an HTTP endpoint. It acts solely as a transport and validation boundary (JSON parsing, basic checks, 400/404/500 error mapping) and contains no risk-engine or provider business logic. It seamlessly formats responses while ensuring secrets remain server-side.
 - **Providers**: Adapters for external APIs (e.g. FIRMS, Open-Meteo).
 - **Normalization**: Adapts provider-specific JSON/CSV into strict domain objects (`FireObservation`, `WeatherObservation`, `AirQualityObservation`). This ensures the Risk Engine remains ignorant of API-specific quirks.
 - **Orchestrator**: Gathers evidence from all providers into an `EnvironmentalEvidenceBundle`.
