@@ -1,8 +1,10 @@
-## Data Ingestion & Provider Abstraction
 To ensure the Risk Engine remains deterministic and pure, external/live providers are abstracted:
 1. **Provider Adapters**: Functions that call external APIs (e.g. `FireDataProvider`, `WeatherDataProvider`, `AirQualityDataProvider`).
-2. **Normalized Observation Boundary**: Provider-specific response shapes (e.g., FIRMS MODIS payload, Open-Meteo JSON) are isolated. They are transformed using normalizers (like `normalizeFirmsData`) into strictly typed domain contracts (`FireObservation`, `WeatherObservation`, `AirQualityObservation`). 
-3. **Risk Engine**: The engine itself only accepts the normalized domain objects. It has no knowledge of provider-specific formats or API constraints.
+2. **Normalized Observation Boundary**: Provider-specific response shapes (e.g., FIRMS MODIS payload, Open-Meteo JSON) are isolated. They are transformed using normalizers (like `normalizeFirmsData`) into strictly typed domain contracts (`FireObservation`, `WeatherObservation`, `AirQualityObservation`).
+3. **Environmental Evidence Orchestrator**: Acts as a central domain service bridging providers and the risk engine.
+   - **Live Mode**: Fetches data from configured providers in parallel, gracefully preserves partial `DATA_GAP`s without fabricating data, and returns a unified `EnvironmentalEvidenceBundle`.
+   - **Replay Mode**: Loads fixed fixture scenarios completely bypassing live networks, outputting deterministic bundles identical in shape to live mode.
+4. **Risk Engine**: The engine itself only accepts the normalized domain objects from the orchestrator. It has no knowledge of provider-specific formats or API constraints.
 
 ## Telemetry Sources
 
