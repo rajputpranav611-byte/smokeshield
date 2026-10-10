@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { handler } from './plan';
 import { PlanRepository } from '../data/PlanRepository';
-import { APIGatewayProxyEventV2 } from 'aws-lambda';
+import { APIGatewayProxyEventV2, APIGatewayProxyEventV2WithJWTAuthorizer } from 'aws-lambda';
 
 vi.mock('../data/PlanRepository');
 
