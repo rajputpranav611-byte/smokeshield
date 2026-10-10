@@ -6,14 +6,14 @@ vi.mock('../config/secrets', () => ({
   getFirmsMapKey: vi.fn().mockResolvedValue('mock-key')
 }));
 
+vi.mock('../../domain/assessment', () => ({
+  assessEnvironment: vi.fn().mockResolvedValue({ success: true })
+}));
+
 describe('Assessment Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
-
-vi.mock('../../domain/assessment', () => ({
-  assessEnvironment: vi.fn().mockResolvedValue({ success: true })
-}));
 
   const createEvent = (body: any): APIGatewayProxyEventV2 => {
     return {
