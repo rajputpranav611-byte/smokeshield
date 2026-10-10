@@ -1,0 +1,192 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SmokeShield Serverless Backend
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+  CorsAllowedOrigin:
+    Type: String
+    Default: 'http://localhost:3000'
+    Description: Allowed origin for CORS
+
+Globals:
+  Function:
+    Timeout: 20
+    MemorySize: 512
+    Runtime: nodejs22.x
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Environment
+        WEATHER_API_BASE_URL: https://api.open-meteo.com
+
+Resources:
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref CorsAllowedOrigin
+        AllowMethods:
+          - POST
+          - GET
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        MaxAge: 3600
+
+  AssessmentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: src/aws/handlers/assessment.handler
+      Events:
+        AssessmentApi:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /assessment
+            Method: POST
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smokeshield/${Environment}/FIRMS_MAP_KEY'
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        EntryPoints: 
+          - src/aws/handlers/assessment.ts
+
+  PlanFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: src/aws/handlers/plan.handler
+      Events:
+        GetPlan:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /plans/{planId}
+            Method: GET
+        CreatePlan:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /plans
+            Method: POST
+        ApprovePlan:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /plans/{planId}/approve
+            Method: POST
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref StateTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        EntryPoints:
+          - src/aws/handlers/plan.ts
+
+  PlanGuardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: src/aws/handlers/planguard.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref StateTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smokeshield/${Environment}/FIRMS_MAP_KEY'
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        EntryPoints:
+          - src/aws/handlers/planguard.ts
+
+  PlanGuardSchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: SmokeShieldPlanGuardMorning
+      ScheduleExpression: "cron(45 6 * * ? *)"
+      ScheduleExpressionTimezone: "Asia/Kolkata"
+      State: DISABLED
+      FlexibleTimeWindow:
+        Mode: "OFF"
+      Target:
+        Arn: !GetAtt PlanGuardFunction.Arn
+        RoleArn: !GetAtt PlanGuardScheduleRole.Arn
+        Input: '{"schoolId": "example-school", "planId": "example-plan", "version": 1}'
+
+  PlanGuardScheduleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokePlanGuard
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt PlanGuardFunction.Arn
+
+  AssessmentLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AssessmentFunction}
+      RetentionInDays: 7
+
+  StateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmokeShieldState
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/assessment"
+  AssessmentFunctionArn:
+    Description: "Assessment Lambda Function ARN"
+    Value: !GetAtt AssessmentFunction.Arn
+  StateTableName:
+    Description: "DynamoDB State Table Name"
+    Value: !Ref StateTable

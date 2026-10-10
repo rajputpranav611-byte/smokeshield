@@ -16,8 +16,14 @@ export interface AirQualityDataProvider {
 }
 
 export class FirmsProvider implements FireDataProvider {
+  constructor(private readonly apiKeyProvider?: () => Promise<string | null>) {}
+
   async getFires(schoolLat: number, schoolLon: number, radiusKm: number, now: string): Promise<ProviderResult<FireObservation[]>> {
-    const mapKey = process.env.FIRMS_MAP_KEY;
+    let mapKey = process.env.FIRMS_MAP_KEY;
+    if (this.apiKeyProvider) {
+      const providedKey = await this.apiKeyProvider();
+      if (providedKey) mapKey = providedKey;
+    }
     if (!mapKey) {
       return { ok: false, status: "ERROR", message: "FIRMS_MAP_KEY is missing" };
     }
