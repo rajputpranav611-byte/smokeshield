@@ -1,11 +1,12 @@
-import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
+import { APIGatewayProxyEventV2WithJWTAuthorizer, APIGatewayProxyResultV2 } from 'aws-lambda';
 import { PlanRepository } from '../data/PlanRepository';
 import { OperationalPlan, PlanApproval } from '../../types/domain';
 
 const repo = new PlanRepository();
 
-function authorize(event: APIGatewayProxyEventV2): { authorized: boolean; actorId?: string; role?: string } {
-  const authorizer = event.requestContext?.authorizer;
+function authorize(event: APIGatewayProxyEventV2WithJWTAuthorizer): { authorized: boolean; actorId?: string; role?: string } {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const authorizer = (event.requestContext as any)?.authorizer;
   if (!authorizer || !authorizer.jwt || !authorizer.jwt.claims) {
     return { authorized: false };
   }
@@ -37,7 +38,7 @@ function authorize(event: APIGatewayProxyEventV2): { authorized: boolean; actorI
   };
 }
 
-export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
+export const handler = async (event: APIGatewayProxyEventV2WithJWTAuthorizer): Promise<APIGatewayProxyResultV2> => {
   try {
     const method = event.requestContext.http.method;
     const path = event.requestContext.http.path;

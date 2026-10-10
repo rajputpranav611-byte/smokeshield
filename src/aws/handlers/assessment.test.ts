@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { APIGatewayProxyStructuredResultV2 } from 'aws-lambda';
 import { handler } from './assessment';
 import { APIGatewayProxyEventV2 } from 'aws-lambda';
 
@@ -36,7 +38,7 @@ describe('Assessment Handler', () => {
     });
     
     // Should mock assessEnvironment but testing the handler parses and calls properly
-    const response = await handler(event);
+    const response = await handler(event) as APIGatewayProxyStructuredResultV2;
     // Since we mock secrets but not providers in full, it might fail or return a valid response.
     // Assuming the orchestrator uses mocked providers or we mock assessEnvironment.
     // Actually, we don't mock assessEnvironment here, so it might make actual calls unless we mock orchestrator.
@@ -49,7 +51,7 @@ describe('Assessment Handler', () => {
       requestContext: { http: { method: 'POST', path: '/assessment' } },
       body: 'invalid-json'
     } as APIGatewayProxyEventV2;
-    const response = await handler(event);
+    const response = await handler(event) as APIGatewayProxyStructuredResultV2;
     expect(response.statusCode).toBe(400);
   });
 });

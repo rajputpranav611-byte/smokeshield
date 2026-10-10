@@ -1,0 +1,263 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'SmokeShield Serverless Backend
+
+  '
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+    - dev
+    - prod
+  CorsAllowedOrigin:
+    Type: String
+    Default: http://localhost:3000
+    Description: Allowed origin for CORS
+Globals:
+  Function:
+    Timeout: 20
+    MemorySize: 512
+    Runtime: nodejs22.x
+    Architectures:
+    - arm64
+    Environment:
+      Variables:
+        NODE_ENV:
+          Ref: Environment
+        WEATHER_API_BASE_URL: https://api.open-meteo.com
+Resources:
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer:
+                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+              audience:
+              - Ref: UserPoolClient
+      CorsConfiguration:
+        AllowOrigins:
+        - Ref: CorsAllowedOrigin
+        AllowMethods:
+        - POST
+        - GET
+        - OPTIONS
+        AllowHeaders:
+        - Content-Type
+        - Authorization
+        MaxAge: 3600
+  AssessmentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: AssessmentFunction
+      Handler: assessment.handler
+      Events:
+        AssessmentApi:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /assessment
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+      Policies:
+      - Statement:
+        - Effect: Allow
+          Action:
+          - ssm:GetParameter
+          Resource:
+            Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smokeshield/${Environment}/FIRMS_MAP_KEY
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+        - src/aws/handlers/assessment.ts
+        Minify: true
+        Target: es2020
+      SamResourceId: AssessmentFunction
+  PlanFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PlanFunction
+      Handler: plan.handler
+      Events:
+        GetPlan:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /plans/{planId}
+            Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
+        CreatePlan:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /plans
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+        ApprovePlan:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: HttpApi
+            Path: /plans/{planId}/approve
+            Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: StateTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+        - src/aws/handlers/plan.ts
+        Minify: true
+        Target: es2020
+      SamResourceId: PlanFunction
+  PlanGuardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PlanGuardFunction
+      Handler: planguard.handler
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: StateTable
+      - Statement:
+        - Effect: Allow
+          Action:
+          - ssm:GetParameter
+          Resource:
+            Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smokeshield/${Environment}/FIRMS_MAP_KEY
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+        - src/aws/handlers/planguard.ts
+        Minify: true
+        Target: es2020
+      SamResourceId: PlanGuardFunction
+  PlanGuardSchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Name: SmokeShieldPlanGuardMorning
+      ScheduleExpression: cron(45 6 * * ? *)
+      ScheduleExpressionTimezone: Asia/Kolkata
+      State: DISABLED
+      FlexibleTimeWindow:
+        Mode: 'OFF'
+      Target:
+        Arn:
+          Fn::GetAtt:
+          - PlanGuardFunction
+          - Arn
+        RoleArn:
+          Fn::GetAtt:
+          - PlanGuardScheduleRole
+          - Arn
+        Input: '{"schoolId": "example-school", "planId": "example-plan", "version":
+          1}'
+  PlanGuardScheduleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: scheduler.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: InvokePlanGuard
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: lambda:InvokeFunction
+            Resource:
+              Fn::GetAtt:
+              - PlanGuardFunction
+              - Arn
+  AssessmentLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${AssessmentFunction}
+      RetentionInDays: 7
+  StateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SmokeShieldState
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: PK
+        AttributeType: S
+      - AttributeName: SK
+        AttributeType: S
+      KeySchema:
+      - AttributeName: PK
+        KeyType: HASH
+      - AttributeName: SK
+        KeyType: RANGE
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName:
+        Fn::Sub: ${AWS::StackName}-UserPool
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId:
+        Ref: UserPool
+      ClientName:
+        Fn::Sub: ${AWS::StackName}-AppClient
+      GenerateSecret: false
+      ExplicitAuthFlows:
+      - ALLOW_USER_SRP_AUTH
+      - ALLOW_REFRESH_TOKEN_AUTH
+  PrincipalGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Principal
+      UserPoolId:
+        Ref: UserPool
+  SchoolOperatorGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: SchoolOperator
+      UserPoolId:
+        Ref: UserPool
+  AdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Admin
+      UserPoolId:
+        Ref: UserPool
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value:
+      Fn::Sub: https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/assessment
+  AssessmentFunctionArn:
+    Description: Assessment Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - AssessmentFunction
+      - Arn
+  StateTableName:
+    Description: DynamoDB State Table Name
+    Value:
+      Ref: StateTable
