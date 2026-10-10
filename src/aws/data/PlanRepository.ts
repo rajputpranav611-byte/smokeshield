@@ -37,16 +37,28 @@ export class PlanRepository {
   }
 
   async saveApproval(approval: PlanApproval): Promise<void> {
-    // PK: PLAN#<planId>, SK: APPROVAL#<timestamp>
+    // PK: PLAN#<planId>, SK: APPROVAL#v<planVersion>
     await docClient.send(new PutCommand({
       TableName: TABLE_NAME,
       Item: {
         PK: `PLAN#${approval.planId}`,
-        SK: `APPROVAL#${approval.approvedAt}`,
+        SK: `APPROVAL#v${approval.planVersion}`,
         EntityType: 'PlanApproval',
         ...approval
+      },
+      ConditionExpression: "attribute_not_exists(PK)"
+    }));
+  }
+
+  async getApproval(planId: string, version: number): Promise<PlanApproval | null> {
+    const res = await docClient.send(new GetCommand({
+      TableName: TABLE_NAME,
+      Key: {
+        PK: `PLAN#${planId}`,
+        SK: `APPROVAL#v${version}`
       }
     }));
+    return (res.Item as PlanApproval) || null;
   }
 
   async saveVerification(verification: PlanVerification): Promise<void> {

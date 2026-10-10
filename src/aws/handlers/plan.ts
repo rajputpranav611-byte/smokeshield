@@ -5,16 +5,36 @@ import { OperationalPlan, PlanApproval } from '../../types/domain';
 const repo = new PlanRepository();
 
 function authorize(event: APIGatewayProxyEventV2): { authorized: boolean; actorId?: string; role?: string } {
-  const authHeader = event.headers.authorization || event.headers.Authorization;
-  if (!authHeader) return { authorized: false };
+  const authorizer = event.requestContext?.authorizer;
+  if (!authorizer || !authorizer.jwt || !authorizer.jwt.claims) {
+    return { authorized: false };
+  }
   
-  // In a real implementation, this would verify a Cognito JWT.
-  // We mock the role extraction based on the token for this implementation boundary.
-  if (authHeader.includes('Principal')) return { authorized: true, actorId: 'principal-1', role: 'Principal' };
-  if (authHeader.includes('Admin')) return { authorized: true, actorId: 'admin-1', role: 'Admin' };
-  if (authHeader.includes('SchoolOperator')) return { authorized: true, actorId: 'operator-1', role: 'SchoolOperator' };
+  const claims = authorizer.jwt.claims;
+  const groups = claims['cognito:groups'];
+  
+  let userGroups: string[] = [];
+  if (Array.isArray(groups)) {
+    userGroups = groups.map(String);
+  } else if (typeof groups === 'string') {
+    // Sometimes it's a comma separated string depending on how it's mapped, or a string bracket format
+    userGroups = groups.replace('[', '').replace(']', '').split(',').map(s => s.trim());
+  }
 
-  return { authorized: false };
+  let role = undefined;
+  if (userGroups.includes('Admin')) role = 'Admin';
+  else if (userGroups.includes('Principal')) role = 'Principal';
+  else if (userGroups.includes('SchoolOperator')) role = 'SchoolOperator';
+  
+  if (!role) {
+    return { authorized: false };
+  }
+
+  return { 
+    authorized: true, 
+    actorId: String(claims['sub'] || claims['username'] || 'unknown'), 
+    role 
+  };
 }
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {

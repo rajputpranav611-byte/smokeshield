@@ -31,6 +31,14 @@ Resources:
   HttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            IdentitySource: "$request.header.Authorization"
+            JwtConfiguration:
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
+              audience:
+                - !Ref UserPoolClient
       CorsConfiguration:
         AllowOrigins:
           - !Ref CorsAllowedOrigin
@@ -55,6 +63,8 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /assessment
             Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
       Policies:
         - Statement:
             - Effect: Allow
@@ -81,18 +91,24 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /plans/{planId}
             Method: GET
+            Auth:
+              Authorizer: CognitoAuthorizer
         CreatePlan:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
             Path: /plans
             Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
         ApprovePlan:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
             Path: /plans/{planId}/approve
             Method: POST
+            Auth:
+              Authorizer: CognitoAuthorizer
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref StateTable
@@ -179,6 +195,41 @@ Resources:
           KeyType: HASH
         - AttributeName: SK
           KeyType: RANGE
+
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${AWS::StackName}-UserPool
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub ${AWS::StackName}-AppClient
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  PrincipalGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Principal
+      UserPoolId: !Ref UserPool
+
+  SchoolOperatorGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: SchoolOperator
+      UserPoolId: !Ref UserPool
+
+  AdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: Admin
+      UserPoolId: !Ref UserPool
 
 Outputs:
   ApiEndpoint:

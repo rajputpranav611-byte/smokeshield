@@ -19,13 +19,16 @@ export const handler = async (event: unknown): Promise<unknown> => {
       throw new Error("Plan not found");
     }
 
+    const approval = await repo.getApproval(String(planId), Number(version));
+    if (!approval) {
+      throw new Error("Approved plan version not found");
+    }
+
     const orchestrator = new EnvironmentalEvidenceOrchestrator(
       new FirmsProvider(getFirmsMapKey),
       new OpenMeteoProvider()
     );
 
-    // Provide a mocked school context and reference time for this execution
-    // In a full implementation, we'd load school details from a school repository.
     const school = {
       id: String(schoolId),
       name: "Verification School",
@@ -36,7 +39,7 @@ export const handler = async (event: unknown): Promise<unknown> => {
     };
     const referenceTime = new Date().toISOString();
 
-    const assessment = await assessEnvironment(
+    const currentAssessment = await assessEnvironment(
       orchestrator,
       school,
       plan,
@@ -44,20 +47,33 @@ export const handler = async (event: unknown): Promise<unknown> => {
       referenceTime
     );
 
-    // Basic deterministic escalation rules
+    const approvedAssessment = await assessEnvironment(
+      orchestrator,
+      school,
+      plan,
+      'REPLAY',
+      referenceTime,
+      approval.evidenceSnapshotId
+    );
+
     let status: VerificationStatus = "VERIFIED";
     let summary = "Conditions remain within approved bounds.";
-    
-    // Simulate PlanGuard comparison logic
-    if (assessment.riskAssessment.confidenceScore < 50) {
+
+    const { dataQuality, riskAssessment: currentRisk } = currentAssessment;
+    const { riskAssessment: approvedRisk } = approvedAssessment;
+
+    if (dataQuality.hasMissingCriticalData || currentRisk.confidenceScore < 0.5) {
       status = "DATA_GAP";
-      summary = "Insufficient data confidence for automatic verification.";
-    } else if (assessment.riskAssessment.overlapMinutes > 30) {
+      summary = "Insufficient data confidence for automatic verification: " + dataQuality.notes.join(", ");
+    } else if (currentRisk.overlapMinutes > approvedRisk.overlapMinutes + 15) {
       status = "ESCALATED";
-      summary = "Predicted overlap materially increased. Human review required.";
-    } else if (assessment.riskAssessment.overlapMinutes > 0) {
+      summary = `Predicted overlap materially increased from ${approvedRisk.overlapMinutes} to ${currentRisk.overlapMinutes} minutes. Human review required.`;
+    } else if (currentRisk.overlapMinutes > 0 && currentRisk.overlapMinutes > approvedRisk.overlapMinutes) {
       status = "WATCH";
       summary = "Conditions changed. Monitoring active.";
+    } else if (currentRisk.overlapMinutes > 0) {
+      status = "VERIFIED"; // Even if > 0, it hasn't worsened. Never automatically relax an approved precaution.
+      summary = "Conditions remain within approved bounds, but some overlap persists.";
     }
 
     const verification: PlanVerification = {
@@ -66,7 +82,7 @@ export const handler = async (event: unknown): Promise<unknown> => {
       verifiedAt: referenceTime,
       status,
       comparisonSummary: summary,
-      latestEvidenceIds: assessment.riskAssessment.evidenceIds
+      latestEvidenceIds: currentAssessment.riskAssessment.evidenceIds
     };
 
     await repo.saveVerification(verification);
