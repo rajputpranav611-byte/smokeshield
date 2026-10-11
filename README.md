@@ -56,13 +56,13 @@ The map's “potential smoke-influence corridor/window” is modeled context, **
 | Screen | Screenshot |
 |---|---|
 | Command Center |<img width="1894" height="957" alt="Screenshot 2026-10-11 231848" src="https://github.com/user-attachments/assets/243c2187-ba95-4489-8ca1-71d698c4dbc8" />
-|
-| PlanGuard comparison |<img width="1644" height="953" alt="Screenshot 2026-10-11 232035" src="https://github.com/user-attachments/assets/86df265e-724f-4a0a-9b9a-9857464abee4" /> <img width="1652" height="895" alt="Screenshot 2026-10-11 232050" src="https://github.com/user-attachments/assets/d037587d-a4e7-4538-ab8f-b48498abe3a5" />
-|
-| Air Corridor and Evidence Audit | <img width="1652" height="881" alt="Screenshot 2026-10-11 232404" src="https://github.com/user-attachments/assets/9a336133-d0fa-47e4-9f47-2f7f424052ee" /> <img width="1652" height="894" alt="Screenshot 2026-10-11 232420" src="https://github.com/user-attachments/assets/3164604d-1e57-484d-ac8f-15be37ec9300" />
-|
-| Plan Studio / replay scenario | <img width="1672" height="893" alt="Screenshot 2026-10-11 232608" src="https://github.com/user-attachments/assets/9db850d3-1656-4d3d-a398-a98c98798d23" /> <img width="1666" height="893" alt="Screenshot 2026-10-11 232619" src="https://github.com/user-attachments/assets/61a68237-252e-48ef-b61c-efa578c7af68" />
-|
+
+ PlanGuard comparison <img width="1644" height="953" alt="Screenshot 2026-10-11 232035" src="https://github.com/user-attachments/assets/86df265e-724f-4a0a-9b9a-9857464abee4" /> <img width="1652" height="895" alt="Screenshot 2026-10-11 232050" src="https://github.com/user-attachments/assets/d037587d-a4e7-4538-ab8f-b48498abe3a5" />
+
+ Air Corridor and Evidence Audit  <img width="1652" height="881" alt="Screenshot 2026-10-11 232404" src="https://github.com/user-attachments/assets/9a336133-d0fa-47e4-9f47-2f7f424052ee" /> <img width="1652" height="894" alt="Screenshot 2026-10-11 232420" src="https://github.com/user-attachments/assets/3164604d-1e57-484d-ac8f-15be37ec9300" />
+
+ Plan Studio / replay scenario  <img width="1672" height="893" alt="Screenshot 2026-10-11 232608" src="https://github.com/user-attachments/assets/9db850d3-1656-4d3d-a398-a98c98798d23" /> <img width="1666" height="893" alt="Screenshot 2026-10-11 232619" src="https://github.com/user-attachments/assets/61a68237-252e-48ef-b61c-efa578c7af68" />
+
 ## Architecture
 
 The deployed backend components verified for this project include:
