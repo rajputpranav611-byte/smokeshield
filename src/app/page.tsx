@@ -7,6 +7,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { EnvironmentalAssessment } from "@/domain/assessment";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+import { LandingFooter } from "@/components/layout/landing-footer";
 import { 
   AlertTriangle, 
   ArrowRight, 
@@ -14,10 +16,27 @@ import {
   Flame, 
   ShieldCheck, 
   Wind, 
-  Database,
-  Radio,
-  ExternalLink
+  Database, 
+  Radio, 
+  ExternalLink,
+  Layers,
+  Compass
 } from "lucide-react";
+
+// Lazy-load Three.js environmental scene with clean static fallback
+const EnvironmentalCanvas = dynamic(
+  () => import("@/components/visualization/environmental-canvas").then((mod) => mod.EnvironmentalCanvas),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center bg-panel/30 border border-border-strong/40 rounded-lg">
+        <span className="text-xs text-text-muted font-mono flex items-center gap-2">
+          <Wind className="h-4 w-4 animate-spin text-primary" /> Initializing 3D Atmospheric Canvas...
+        </span>
+      </div>
+    )
+  }
+);
 
 export default function Home() {
   const router = useRouter();
@@ -150,8 +169,8 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main Operational Assessment Card (8 Cols) */}
           <div className="lg:col-span-8 flex flex-col gap-6">
-            {/* Primary Action Panel */}
-            <Panel elevated className="border-border-strong">
+            {/* Primary Action Panel with selective glass styling */}
+            <Panel glass elevated className="border-border-strong/70">
               <PanelHeader className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-border">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -388,6 +407,100 @@ export default function Home() {
             </Panel>
           </div>
         </div>
+
+        {/* Public Product Overview & Three.js Environmental Visualization */}
+        <section className="mt-8 border-t border-border-subtle pt-10">
+          <div className="flex flex-col gap-6">
+            <div>
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-panel-elevated border border-border-strong text-xs font-mono text-primary mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-verified"></span>
+                <span>OBSERVE → ASSESS → PLAN → APPROVE → VERIFY</span>
+              </div>
+              <h2 className="text-display-md text-text-primary tracking-tight max-w-2xl">
+                “The air can change before the school bell does.”
+              </h2>
+              <p className="text-body-sm text-text-secondary max-w-2xl mt-2 leading-relaxed">
+                SmokeShield continuously evaluates satellite thermal observations against verified atmospheric wind vectors. It models potential smoke-influence corridors and guards approved school schedules against volatile morning air shifts.
+              </p>
+            </div>
+
+            {/* Three.js Environmental Visualization Container (Selective Glassmorphism) */}
+            <div className="relative w-full h-[400px] rounded-lg border border-border-strong/70 bg-canvas overflow-hidden shadow-2xl">
+              {/* Subtle Atmospheric Gradient Backdrop */}
+              <div className="absolute inset-0 bg-radial from-panel-elevated/40 via-canvas/90 to-canvas pointer-events-none" />
+
+              {/* 3D Scene */}
+              <EnvironmentalCanvas />
+
+              {/* Floating Glassmorphic HUD Card */}
+              <div className="absolute top-4 left-4 z-10 bg-panel/75 backdrop-blur-md border border-border-strong/60 p-4 rounded-md max-w-sm shadow-xl">
+                <div className="flex items-center justify-between gap-2 border-b border-border-subtle pb-2 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Layers className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-semibold text-text-primary">Atmospheric Spatial Field</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-verified bg-verified/10 px-1.5 py-0.5 rounded border border-verified/30">
+                    Deterministic 3D
+                  </span>
+                </div>
+                <p className="text-[11px] text-text-muted leading-relaxed mb-3">
+                  Restrained spatial geometry distinguishing observed satellite fire anomalies (warm markers) from modeled downwind potential smoke-influence cones (translucent field).
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-[10px] font-mono border-t border-border-subtle pt-2 text-text-secondary">
+                  <div>
+                    <span className="text-text-muted block">Protected Node:</span>
+                    <span className="text-text-primary font-semibold">School Ground</span>
+                  </div>
+                  <div>
+                    <span className="text-text-muted block">Projection:</span>
+                    <span className="text-primary font-semibold">Directional Cone</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Right Floating Badge */}
+              <div className="absolute bottom-4 right-4 z-10 bg-panel/85 backdrop-blur-md border border-border-strong/70 px-3 py-1.5 rounded text-[11px] font-mono text-text-muted shadow-lg">
+                <span>3D Canvas • Respects Reduced Motion</span>
+              </div>
+            </div>
+
+            {/* Product Core Capabilities Grid (Glassmorphic surfaces) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+              <Panel glass className="p-5 border-border-strong/60">
+                <div className="w-8 h-8 rounded-md bg-canvas border border-border-strong flex items-center justify-center text-primary mb-3">
+                  <Flame className="h-4 w-4 text-escalated" />
+                </div>
+                <h3 className="text-sm font-semibold text-text-primary mb-1">1. Detect</h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Ingests active NASA FIRMS radiometric detections and Open-Meteo wind vectors with visible timestamps and freshness tracking.
+                </p>
+              </Panel>
+
+              <Panel glass className="p-5 border-border-strong/60">
+                <div className="w-8 h-8 rounded-md bg-canvas border border-border-strong flex items-center justify-center text-primary mb-3">
+                  <Compass className="h-4 w-4 text-info" />
+                </div>
+                <h3 className="text-sm font-semibold text-text-primary mb-1">2. Decide</h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Deterministic risk engine calculates activity overlap windows without fabricating synthetic AQI values or guessing unmeasured plumes.
+                </p>
+              </Panel>
+
+              <Panel glass className="p-5 border-border-strong/60">
+                <div className="w-8 h-8 rounded-md bg-canvas border border-border-strong flex items-center justify-center text-primary mb-3">
+                  <ShieldCheck className="h-4 w-4 text-verified" />
+                </div>
+                <h3 className="text-sm font-semibold text-text-primary mb-1">3. Verify</h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  PlanGuard conducts 06:45 AM verification against morning telemetry, requiring explicit principal authorization for escalations.
+                </p>
+              </Panel>
+            </div>
+          </div>
+        </section>
+
+        {/* Public Landing Footer */}
+        <LandingFooter />
       </div>
     </AppShell>
   );

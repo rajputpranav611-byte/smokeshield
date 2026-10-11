@@ -345,8 +345,8 @@ export default function PlanStudio() {
               </div>
             </div>
 
-            {/* Recalculated Assessment Card */}
-            <Panel elevated className="border-border-strong">
+            {/* Recalculated Assessment Card with selective glass styling */}
+            <Panel glass elevated className="border-border-strong/70">
               <PanelHeader className="pb-3 border-b border-border flex items-center justify-between">
                 <div>
                   <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Engine Determination</span>

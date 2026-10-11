@@ -232,8 +232,8 @@ export default function PlanGuard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column: Morning Verification Outcome & Rules (5 Cols) */}
           <div className="lg:col-span-5 flex flex-col gap-6">
-            {/* Primary Status Card */}
-            <Panel elevated className="border-border-strong">
+            {/* Primary Status Card with selective glass styling */}
+            <Panel glass elevated className="border-border-strong/70">
               <PanelHeader className="pb-3 border-b border-border">
                 <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">
                   Morning Verification Outcome

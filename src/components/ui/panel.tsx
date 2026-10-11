@@ -3,13 +3,17 @@ import { cn } from "@/lib/utils"
 
 const Panel = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { elevated?: boolean }
->(({ className, elevated = false, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & { elevated?: boolean; glass?: boolean }
+>(({ className, elevated = false, glass = false, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "rounded-md border text-card-foreground shadow-sm",
-      elevated ? "bg-panel-elevated border-border-strong" : "bg-panel border-border-subtle",
+      "rounded-md border text-card-foreground shadow-sm transition-colors",
+      glass
+        ? "bg-panel/75 backdrop-blur-md border-border-strong/60 shadow-lg"
+        : elevated
+        ? "bg-panel-elevated border-border-strong"
+        : "bg-panel border-border-subtle",
       className
     )}
     {...props}
