@@ -11,8 +11,10 @@ import {
   Radio, 
   RefreshCw, 
   Wind,
-  Cpu
+  Cpu,
+  MapPin
 } from "lucide-react";
+import Link from "next/link";
 
 export default function Evidence() {
   const [assessment, setAssessment] = useState<EnvironmentalAssessment | null>(null);
@@ -111,6 +113,7 @@ export default function Evidence() {
                           <th className="py-2.5 px-3">Latitude, Longitude</th>
                           <th className="py-2.5 px-3">Confidence</th>
                           <th className="py-2.5 px-3">Overpass Timestamp</th>
+                          <th className="py-2.5 px-3 text-right">Map Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -121,6 +124,15 @@ export default function Evidence() {
                             <td className="py-2 px-3">{fire.latitude.toFixed(4)}, {fire.longitude.toFixed(4)}</td>
                             <td className="py-2 px-3 font-semibold text-escalated">{fire.confidence ? `${fire.confidence}%` : "N/A"}</td>
                             <td className="py-2 px-3 text-text-muted">{new Date(fire.observedAt).toLocaleString()}</td>
+                            <td className="py-2 px-3 text-right">
+                              <Link
+                                href={`/air-corridor?fireId=${encodeURIComponent(fire.id)}`}
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary-hover hover:underline"
+                              >
+                                <MapPin className="h-3 w-3" />
+                                <span>Locate on Map</span>
+                              </Link>
+                            </td>
                           </tr>
                         ))}
                       </tbody>

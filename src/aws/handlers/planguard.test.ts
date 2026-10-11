@@ -94,4 +94,45 @@ describe('PlanGuard Handler', () => {
     const result = await handler({ schoolId: 's', planId: 'p', version: 1 }) as any;
     expect(result.verification.status).toBe('WATCH');
   });
+
+  it('handles improving conditions conservatively (VERIFIED, never auto-relaxes precautions)', async () => {
+    vi.mocked(PlanRepository.prototype.getPlan).mockResolvedValue({ id: 'p', policyVersion: '1' } as any);
+    vi.mocked(PlanRepository.prototype.getApproval).mockResolvedValue({ evidenceSnapshotId: 'snap-1' } as any);
+
+    // approved had 30m overlap, fresh morning has 0m overlap (improved)
+    vi.mocked(assessmentModule.assessEnvironment)
+      .mockResolvedValueOnce({
+        dataQuality: { hasMissingCriticalData: false, notes: [] },
+        riskAssessment: { confidenceScore: 0.95, overlapMinutes: 0, evidenceIds: ['w1'] }
+      } as any)
+      .mockResolvedValueOnce({
+        dataQuality: { hasMissingCriticalData: false, notes: [] },
+        riskAssessment: { confidenceScore: 0.9, overlapMinutes: 30, evidenceIds: ['w0'] }
+      } as any);
+
+    const result = await handler({ schoolId: 's', planId: 'p', version: 1 }) as any;
+    expect(result.success).toBe(true);
+    expect(result.verification.status).toBe('VERIFIED');
+    expect(result.verification.comparisonSummary).toContain('Conditions remain within approved bounds');
+  });
+
+  it('retains approved precautions when overlap is unchanged and non-zero', async () => {
+    vi.mocked(PlanRepository.prototype.getPlan).mockResolvedValue({ id: 'p', policyVersion: '1' } as any);
+    vi.mocked(PlanRepository.prototype.getApproval).mockResolvedValue({ evidenceSnapshotId: 'snap-1' } as any);
+
+    // approved had 20m overlap, fresh morning has same 20m overlap
+    vi.mocked(assessmentModule.assessEnvironment)
+      .mockResolvedValueOnce({
+        dataQuality: { hasMissingCriticalData: false, notes: [] },
+        riskAssessment: { confidenceScore: 0.9, overlapMinutes: 20, evidenceIds: ['w1'] }
+      } as any)
+      .mockResolvedValueOnce({
+        dataQuality: { hasMissingCriticalData: false, notes: [] },
+        riskAssessment: { confidenceScore: 0.9, overlapMinutes: 20, evidenceIds: ['w0'] }
+      } as any);
+
+    const result = await handler({ schoolId: 's', planId: 'p', version: 1 }) as any;
+    expect(result.verification.status).toBe('VERIFIED');
+    expect(result.verification.comparisonSummary).toContain('Conditions remain within approved bounds, but some overlap persists');
+  });
 });

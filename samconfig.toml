@@ -1,0 +1,15 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "smokeshield-dev"
+resolve_s3 = true
+s3_prefix = "smokeshield-dev"
+region = "ap-south-1"
+profile = "smokeshield-dev"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=\"dev\" CorsAllowedOrigin=\"http://localhost:3000\""
+image_repositories = []
+
+[default.global.parameters]
+region = "ap-south-1"

@@ -11,10 +11,12 @@ import {
   Wind, 
   Layers, 
   ShieldAlert, 
-  RefreshCw, 
+  RefreshCw,
   Info,
-  Compass
+  Compass,
+  FileText
 } from "lucide-react";
+import Link from "next/link";
 
 export default function AirCorridor() {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -22,7 +24,13 @@ export default function AirCorridor() {
   const [assessment, setAssessment] = useState<EnvironmentalAssessment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedFireId, setSelectedFireId] = useState<string | null>(null);
+  const [selectedFireId, setSelectedFireId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("fireId");
+    }
+    return null;
+  });
   const [showModelCorridor, setShowModelCorridor] = useState(true);
 
   async function loadData() {
@@ -415,9 +423,18 @@ export default function AirCorridor() {
                   <Flame className="h-4 w-4 text-escalated" />
                   <span className="text-heading-sm text-text-primary text-sm font-semibold">Fire Evidence</span>
                 </div>
-                <span className="text-xs font-mono text-text-primary bg-panel-elevated px-2 py-0.5 rounded border border-border-strong">
-                  {assessment?.evidence.fires.length || 0} Detections
-                </span>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/evidence"
+                    className="text-[11px] text-text-secondary hover:text-text-primary flex items-center gap-1 hover:underline"
+                  >
+                    <FileText className="h-3 w-3" />
+                    <span>Evidence Audit</span>
+                  </Link>
+                  <span className="text-xs font-mono text-text-primary bg-panel-elevated px-2 py-0.5 rounded border border-border-strong">
+                    {assessment?.evidence.fires.length || 0} Detections
+                  </span>
+                </div>
               </div>
 
               {assessment && assessment.evidence.fires.length > 0 ? (
