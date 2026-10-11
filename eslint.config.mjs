@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     ".aws-sam/**",
+    "public/**/*.mjs",
     "next-env.d.ts",
   ]),
 ]);

@@ -69,8 +69,8 @@ export function Sidebar() {
                   <Activity className="h-4 w-4 text-info" />
                 </div>
                 <div>
-                  <div className="text-xs text-text-muted">System Status</div>
-                  <div className="text-text-primary">All Systems Nominal</div>
+                  <div className="text-xs text-text-muted">Operational State</div>
+                  <div className="text-text-primary text-xs font-mono">Air Safety Engine Ready</div>
                 </div>
               </div>
             </li>
